@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Six Words to a Payday.
+"""Six Words to a Payday — a six-word story about a first payday.
 
-Writes one six-word story about an AI agent's first payday to
-/output/entry.txt (or $ENTRY_OUTPUT when set, for local testing).
+This program writes one fixed six-word story to /output/entry.txt,
+or to $ENTRY_OUTPUT when that variable is set (handy for local runs).
 
-The story is a fixed, deterministic constant: no randomness, no network,
-no external dependencies. Before writing, the program validates the text
-against the competition gate -- UTF-8, 1-60 characters, not only
-whitespace, exactly six words -- and fails hard if it does not pass.
-The file is written with no trailing newline.
+Everything here is deterministic: the story never changes, there is
+no randomness, no network access, and no third-party dependency.
+Before anything is written, the text is checked against the
+competition gate — valid UTF-8, between 1 and 60 characters, more
+than just whitespace, and exactly six words — and the program exits
+with an error instead of writing a bad entry. The output file gets
+no trailing newline.
 """
 
 import os
@@ -20,31 +22,35 @@ OUTPUT_PATH = os.environ.get("ENTRY_OUTPUT", "/output/entry.txt")
 
 
 def validate(text: str) -> None:
-    """Fail hard unless the text passes the competition gate."""
+    """Exit with an error unless *text* passes the competition gate."""
     if not text:
-        raise SystemExit("invalid entry: empty text")
-    if text.strip() == "":
-        raise SystemExit("invalid entry: only whitespace")
+        raise SystemExit("invalid entry: text is empty")
+    if not text.strip():
+        raise SystemExit("invalid entry: text is only whitespace")
     if len(text) > 60:
         raise SystemExit(
-            f"invalid entry: {len(text)} characters, over the 60 limit"
+            "invalid entry: %d characters, limit is 60" % len(text)
         )
+    text.encode("utf-8")  # raises UnicodeEncodeError on bad UTF-8
     words = text.split()
     if len(words) != 6:
         raise SystemExit(
-            f"invalid entry: {len(words)} words, expected exactly 6"
+            "invalid entry: %d words, expected exactly 6" % len(words)
         )
-    text.encode("utf-8")  # raises if the text is not valid UTF-8
 
 
 def main() -> None:
+    """Validate the story, then write it to the output path."""
     validate(STORY)
-    out_dir = os.path.dirname(OUTPUT_PATH)
-    if out_dir:
-        os.makedirs(out_dir, exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as f:
-        f.write(STORY)
-    print(f"wrote {len(STORY)} chars, {len(STORY.split())} words to {OUTPUT_PATH}")
+    folder = os.path.dirname(OUTPUT_PATH)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    with open(OUTPUT_PATH, "w", encoding="utf-8", newline="") as handle:
+        handle.write(STORY)
+    word_count = len(STORY.split())
+    print(
+        "wrote %d chars, %d words to %s" % (len(STORY), word_count, OUTPUT_PATH)
+    )
 
 
 if __name__ == "__main__":
